@@ -4,9 +4,22 @@ const AWS = require('aws-sdk');
 const cors = require('cors');
 
 const app = express();
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
 
+// ✅ Health check (مهم جداً)
+app.get('/health', (req, res) => {
+  res.send('OK');
+});
+
+// اختبار سريع
+app.get('/test', (req, res) => {
+  res.send('Server is working ✅');
+});
+
+// تسجيل مستخدم (تجريبي)
 app.post('/register', (req, res) => {
   const { name, email, password } = req.body;
 
@@ -18,9 +31,10 @@ app.post('/register', (req, res) => {
   });
 });
 
+// إعداد رفع الملفات
 const upload = multer();
 
-// 🔐 بيانات R2
+// 🔐 إعداد Cloudflare R2
 const s3 = new AWS.S3({
   accessKeyId: process.env.ACCESS_KEY,
   secretAccessKey: process.env.SECRET_KEY,
@@ -29,7 +43,7 @@ const s3 = new AWS.S3({
   signatureVersion: 'v4',
 });
 
-// رفع صورة
+// ✅ رفع صورة
 app.post('/upload', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
@@ -38,8 +52,10 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const fileName = `users/${Date.now()}.jpg`;
+    // اسم الملف
+    const fileName = `users/${Date.now()}-${file.originalname}`;
 
+    // رفع إلى R2
     await s3.upload({
       Bucket: 'wassal-images',
       Key: fileName,
@@ -47,22 +63,19 @@ app.post('/upload', upload.single('file'), async (req, res) => {
       ContentType: file.mimetype,
     }).promise();
 
+    // رابط الصورة
     const imageUrl = `https://pub-5926ff8f2dca4c22b8fcade3d0fe6f73.r2.dev/${fileName}`;
 
     res.json({ url: imageUrl });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Upload failed');
+    console.error("Upload error:", err);
+    res.status(500).json({ error: 'Upload failed' });
   }
 });
 
 // تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
-
-app.get('/test', (req, res) => {
-  res.send('Server is working ✅');
-});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
