@@ -48,6 +48,10 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 // تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
 
+app.get('/test', (req, res) => {
+  res.send('Server is working ✅');
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
