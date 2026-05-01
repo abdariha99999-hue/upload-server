@@ -5,6 +5,18 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
+app.use(express.json());
+
+app.post('/register', (req, res) => {
+  const { name, email, password } = req.body;
+
+  console.log("New user:", name, email);
+
+  res.json({
+    message: "User registered successfully ✅",
+    user: { name, email }
+  });
+});
 
 const upload = multer();
 
